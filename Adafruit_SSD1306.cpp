@@ -141,30 +141,43 @@ void Adafruit_SSD1306::drawPixel(int16_t x, int16_t y, uint16_t color) {
 
 }
 
-Adafruit_SSD1306::Adafruit_SSD1306(int8_t SID, int8_t SCLK, int8_t DC, int8_t RST, int8_t CS) : Adafruit_GFX(SSD1306_LCDWIDTH, SSD1306_LCDHEIGHT) {
+// constructor for generic SPI - we indicate SID, SCLK, DataCommand, Reset, ChipSelect
+Adafruit_SSD1306::Adafruit_SSD1306(int8_t SID, int8_t SCLK, int8_t DC, int8_t RST, int8_t CS) :
+Adafruit_GFX(SSD1306_LCDWIDTH, SSD1306_LCDHEIGHT) {
   cs = CS;
   rst = RST;
   dc = DC;
   sclk = SCLK;
   sid = SID;
+  scl = sda = -1;
   hwSPI = false;
 }
 
 // constructor for hardware SPI - we indicate DataCommand, ChipSelect, Reset
-Adafruit_SSD1306::Adafruit_SSD1306(int8_t DC, int8_t RST, int8_t CS) : Adafruit_GFX(SSD1306_LCDWIDTH, SSD1306_LCDHEIGHT) {
+Adafruit_SSD1306::Adafruit_SSD1306(int8_t DC, int8_t RST, int8_t CS) :
+Adafruit_GFX(SSD1306_LCDWIDTH, SSD1306_LCDHEIGHT) {
   dc = DC;
   rst = RST;
   cs = CS;
+  scl = sda = -1;
   hwSPI = true;
 }
 
-// initializer for I2C - we only indicate the reset pin!
+// initializer for generic I2C - we only indicate the reset pin!
 Adafruit_SSD1306::Adafruit_SSD1306(int8_t reset) :
 Adafruit_GFX(SSD1306_LCDWIDTH, SSD1306_LCDHEIGHT) {
-  sclk = dc = cs = sid = -1;
+  sclk = dc = cs = sid = scl = sda = -1;
   rst = reset;
 }
 
+// initializer for I2C - we indicate reset, scl and sda
+Adafruit_SSD1306::Adafruit_SSD1306(int8_t RST, int8_t SCL, int8_t SDA, int8_t DUMMY) :
+Adafruit_GFX(SSD1306_LCDWIDTH, SSD1306_LCDHEIGHT) {
+  sclk = dc = cs = sid = -1;
+  rst = RST;
+  scl = SCL;
+  sda = SDA;
+}
 
 void Adafruit_SSD1306::begin(uint8_t vccstate, uint8_t i2caddr, bool reset) {
   _vccstate = vccstate;
@@ -203,7 +216,11 @@ void Adafruit_SSD1306::begin(uint8_t vccstate, uint8_t i2caddr, bool reset) {
   else
   {
     // I2C Init
-    Wire.begin();
+    if (scl == -1){
+    	Wire.begin();
+    } else {
+        Wire.begin(scl, sda);
+	}
 #ifdef __SAM3X8E__
     // Force 400 KHz I2C, rawr! (Uses pins 20, 21 for SDA, SCL)
     TWI1->TWI_CWGR = 0;
