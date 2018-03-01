@@ -170,14 +170,16 @@ Adafruit_GFX(SSD1306_LCDWIDTH, SSD1306_LCDHEIGHT) {
   rst = reset;
 }
 
-// initializer for I2C - we indicate reset, scl and sda
-Adafruit_SSD1306::Adafruit_SSD1306(int8_t RST, int8_t SCL, int8_t SDA, int8_t DUMMY) :
-Adafruit_GFX(SSD1306_LCDWIDTH, SSD1306_LCDHEIGHT) {
-  sclk = dc = cs = sid = -1;
-  rst = RST;
-  scl = SCL;
-  sda = SDA;
-}
+#if defined(ESP8266) || defined(ESP32)
+	// initializer for I2C - we indicate reset, scl and sda
+	Adafruit_SSD1306::Adafruit_SSD1306(int8_t RST, int8_t SCL, int8_t SDA, int8_t DUMMY) :
+	Adafruit_GFX(SSD1306_LCDWIDTH, SSD1306_LCDHEIGHT) {
+	  sclk = dc = cs = sid = -1;
+	  rst = RST;
+	  scl = SCL;
+	  sda = SDA;
+	}
+#endif
 
 void Adafruit_SSD1306::begin(uint8_t vccstate, uint8_t i2caddr, bool reset) {
   _vccstate = vccstate;
@@ -216,11 +218,15 @@ void Adafruit_SSD1306::begin(uint8_t vccstate, uint8_t i2caddr, bool reset) {
   else
   {
     // I2C Init
-    if (scl == -1){
-    	Wire.begin();
-    } else {
-        Wire.begin(scl, sda);
-	}
+    #if defined(ESP8266) || defined(ESP32)
+		if (scl == -1){
+			Wire.begin();
+		} else {
+			Wire.begin(scl, sda);
+		}
+	#else
+		Wire.begin();
+	#endif
 #ifdef __SAM3X8E__
     // Force 400 KHz I2C, rawr! (Uses pins 20, 21 for SDA, SCL)
     TWI1->TWI_CWGR = 0;
